@@ -24,3 +24,43 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@media print {
+
+  /* Hide non-printable elements */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Reset main layout constraints */
+  body,
+  html,
+  #__next,
+  main {
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+
+  /* Prepare the print container */
+  .print-container {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    position: static !important;
+  }
+
+  /* Ensure the resume itself doesn't have weird margins/shadows */
+  #resume-preview {
+    margin: 0 auto !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+}
