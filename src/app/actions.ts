@@ -20,9 +20,9 @@ export async function parseResumeAction(formData: FormData): Promise<ActionResul
 
 
     // Polyfill for Vercel/Node environment where DOMMatrix/Canvas is missing
-    if (typeof global.DOMMatrix === 'undefined') {
+    if (typeof (global as any).DOMMatrix === 'undefined') {
       // @ts-ignore
-      global.DOMMatrix = class DOMMatrix {
+      (global as any).DOMMatrix = class DOMMatrix {
         constructor() { return this; }
         multiply() { return this; }
         translate() { return this; }
@@ -31,9 +31,9 @@ export async function parseResumeAction(formData: FormData): Promise<ActionResul
       };
     }
 
-    if (typeof global.Canvas === 'undefined') {
+    if (typeof (global as any).Canvas === 'undefined') {
       // @ts-ignore
-      global.Canvas = class Canvas {
+      (global as any).Canvas = class Canvas {
         getContext() {
           return {
             measureText: () => ({ width: 0 }),
