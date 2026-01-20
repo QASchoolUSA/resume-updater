@@ -20,17 +20,45 @@ export async function parseResumeAction(formData: FormData): Promise<ActionResul
 
 
     // Polyfill for Vercel/Node environment where DOMMatrix/Canvas is missing
-    if (typeof Promise.withResolvers === "undefined") {
-      if (typeof window === "undefined") {
-        // @ts-ignore
-        global.DOMMatrix = class DOMMatrix {
-          constructor() { return this; }
-          multiply() { return this; }
-          translate() { return this; }
-          scale() { return this; }
-          transformPoint() { return { x: 0, y: 0 }; }
-        };
-      }
+    if (typeof global.DOMMatrix === 'undefined') {
+      // @ts-ignore
+      global.DOMMatrix = class DOMMatrix {
+        constructor() { return this; }
+        multiply() { return this; }
+        translate() { return this; }
+        scale() { return this; }
+        transformPoint() { return { x: 0, y: 0 }; }
+      };
+    }
+
+    if (typeof global.Canvas === 'undefined') {
+      // @ts-ignore
+      global.Canvas = class Canvas {
+        getContext() {
+          return {
+            measureText: () => ({ width: 0 }),
+            fillText: () => { },
+            strokeText: () => { },
+            fillRect: () => { },
+            strokeRect: () => { },
+            beginPath: () => { },
+            moveTo: () => { },
+            lineTo: () => { },
+            stroke: () => { },
+            fill: () => { },
+            save: () => { },
+            restore: () => { },
+            scale: () => { },
+            rotate: () => { },
+            translate: () => { },
+            transform: () => { },
+            setTransform: () => { },
+            resetTransform: () => { },
+            createPattern: () => { },
+            createLinearGradient: () => { },
+          };
+        }
+      };
     }
 
     // Use pdfjs-dist to parse
