@@ -88,6 +88,11 @@ export async function parseResumeAction(formData: FormData): Promise<ActionResul
       text += pageText + "\n";
     }
 
+    console.log(`Extracted text length: ${text.length}`);
+    if (text.trim().length === 0) {
+      throw new Error("Unable to extract text from this PDF. It might be an image-only PDF or protected.");
+    }
+
     const prompt = `
       You are an expert resume parser. Extract the following information from the resume text below and return it as a pure JSON object.
       Do not include markdown formatting (like \`\`\`json). Just return the raw JSON.
@@ -145,10 +150,16 @@ export async function parseResumeAction(formData: FormData): Promise<ActionResul
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const textResponse = response.text();
+    console.log("Gemini Response:", textResponse.substring(0, 200) + "...");
 
     const cleanJson = textResponse.replace(/```json/g, "").replace(/```/g, "").trim();
 
-    return { success: true, data: JSON.parse(cleanJson) as ResumeContent };
+    try {
+      return { success: true, data: JSON.parse(cleanJson) as ResumeContent };
+    } catch (e) {
+      console.error("JSON Parse Error. Raw response:", textResponse);
+      throw new Error("Failed to parse AI response. The resume might be too complex or the AI returned invalid data.");
+    }
 
   } catch (error) {
     console.error("Error parsing resume:", error);
