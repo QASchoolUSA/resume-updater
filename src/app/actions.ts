@@ -1,8 +1,7 @@
 "use server";
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
-// @ts-ignore
-const pdf = require("pdf-parse-new");
+
 import { ResumeContent } from "@/types/resume";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
@@ -17,9 +16,26 @@ export async function parseResumeAction(formData: FormData): Promise<ResumeConte
 
   try {
     const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const pdfData = await pdf(buffer);
-    const text = pdfData.text;
+
+    // Use pdfjs-dist to parse
+    const { getDocument } = require("pdfjs-dist/legacy/build/pdf.mjs");
+
+    // This is required for Next.js server environment to handle the worker properly or disable it
+    const loadingTask = getDocument({
+      data: new Uint8Array(arrayBuffer),
+      useSystemFonts: true,
+      disableFontFace: true,
+    });
+
+    const pdfDocument = await loadingTask.promise;
+    let text = "";
+
+    for (let i = 1; i <= pdfDocument.numPages; i++) {
+      const page = await pdfDocument.getPage(i);
+      const content = await page.getTextContent();
+      const pageText = content.items.map((item: any) => item.str).join(" ");
+      text += pageText + "\n";
+    }
 
     const prompt = `
       You are an expert resume parser. Extract the following information from the resume text below and return it as a pure JSON object.
