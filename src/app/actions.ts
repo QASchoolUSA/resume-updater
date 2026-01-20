@@ -61,12 +61,15 @@ export async function parseResumeAction(formData: FormData): Promise<ActionResul
       };
     }
 
-    // Use pdfjs-dist to parse - Dynamic import for ESM support
+    // Use pdfjs-dist to parse - Dynamic import for ESM support (Standard build)
     // @ts-ignore
-    const { getDocument, GlobalWorkerOptions } = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    const { getDocument, GlobalWorkerOptions } = await import("pdfjs-dist/build/pdf.mjs");
 
-    // Explicitly disable worker to avoid looking for external files (Vercel issue)
-    GlobalWorkerOptions.workerSrc = "";
+    // Point to the worker file in node_modules so Vercel can find it
+    // We use serverExternalPackages in next.config.ts to ensure this file exists at runtime
+    const path = require("path");
+    // Use the standard worker for the standard build
+    GlobalWorkerOptions.workerSrc = path.join(process.cwd(), "node_modules/pdfjs-dist/build/pdf.worker.mjs");
 
     // This is required for Next.js server environment to handle the worker properly or disable it
     const loadingTask = getDocument({
