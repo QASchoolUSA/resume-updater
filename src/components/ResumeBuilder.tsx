@@ -20,8 +20,10 @@ export default function ResumeBuilder() {
         formData.append("file", e.target.files[0]);
 
         const result = await parseResumeAction(formData);
-        if (result) {
-            setResumeData(result);
+        if (result.success && result.data) {
+            setResumeData(result.data);
+        } else {
+            alert(`Error parsing resume: ${result.error || "Unknown error"}`);
         }
         setIsParsing(false);
     };
@@ -30,8 +32,10 @@ export default function ResumeBuilder() {
         if (!resumeData || !jobDescription) return;
         setIsTailoring(true);
         const result = await tailorResumeAction(resumeData, jobDescription);
-        if (result) {
-            setResumeData(result);
+        if (result.success && result.data) {
+            setResumeData(result.data);
+        } else {
+            alert(`Error tailoring resume: ${result.error || "Unknown error"}`);
         }
         setIsTailoring(false);
     };

@@ -3,15 +3,15 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 import { ResumeContent } from "@/types/resume";
+import { ActionResult } from "@/types/result";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
-export async function parseResumeAction(formData: FormData): Promise<ResumeContent | null> {
+export async function parseResumeAction(formData: FormData): Promise<ActionResult<ResumeContent>> {
   const file = formData.get("file") as File;
   if (!file) {
-    console.error("No file provided");
-    return null;
+    return { success: false, error: "No file provided" };
   }
 
   try {
@@ -97,11 +97,11 @@ export async function parseResumeAction(formData: FormData): Promise<ResumeConte
 
     const cleanJson = textResponse.replace(/```json/g, "").replace(/```/g, "").trim();
 
-    return JSON.parse(cleanJson) as ResumeContent;
+    return { success: true, data: JSON.parse(cleanJson) as ResumeContent };
 
   } catch (error) {
     console.error("Error parsing resume:", error);
-    return null;
+    return { success: false, error: error instanceof Error ? error.message : "Unknown parsing error" };
   }
 }
 
