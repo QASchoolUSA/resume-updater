@@ -105,7 +105,7 @@ export async function parseResumeAction(formData: FormData): Promise<ActionResul
   }
 }
 
-export async function tailorResumeAction(currentResume: ResumeContent, jobDescription: string): Promise<ResumeContent | null> {
+export async function tailorResumeAction(currentResume: ResumeContent, jobDescription: string): Promise<ActionResult<ResumeContent>> {
   try {
     const prompt = `
       You are an expert resume writer and career coach. Your task is to rewrite the provided resume to perfectly match the target Job Description (JD).
@@ -136,10 +136,10 @@ export async function tailorResumeAction(currentResume: ResumeContent, jobDescri
 
     const cleanJson = textResponse.replace(/```json/g, "").replace(/```/g, "").trim();
 
-    return JSON.parse(cleanJson) as ResumeContent;
+    return { success: true, data: JSON.parse(cleanJson) as ResumeContent };
 
   } catch (error) {
     console.error("Error tailoring resume:", error);
-    return null;
+    return { success: false, error: error instanceof Error ? error.message : "Unknown tailoring error" };
   }
 }
