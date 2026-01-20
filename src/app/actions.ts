@@ -17,6 +17,22 @@ export async function parseResumeAction(formData: FormData): Promise<ActionResul
   try {
     const arrayBuffer = await file.arrayBuffer();
 
+    const arrayBuffer = await file.arrayBuffer();
+
+    // Polyfill for Vercel/Node environment where DOMMatrix/Canvas is missing
+    if (typeof Promise.withResolvers === "undefined") {
+      if (typeof window === "undefined") {
+        // @ts-ignore
+        global.DOMMatrix = class DOMMatrix {
+          constructor() { return this; }
+          multiply() { return this; }
+          translate() { return this; }
+          scale() { return this; }
+          transformPoint() { return { x: 0, y: 0 }; }
+        };
+      }
+    }
+
     // Use pdfjs-dist to parse
     const { getDocument } = require("pdfjs-dist/legacy/build/pdf.mjs");
 
