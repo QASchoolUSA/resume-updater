@@ -17,7 +17,7 @@ export async function parseResumeAction(formData: FormData): Promise<ActionResul
   try {
     const arrayBuffer = await file.arrayBuffer();
 
-    const arrayBuffer = await file.arrayBuffer();
+
 
     // Polyfill for Vercel/Node environment where DOMMatrix/Canvas is missing
     if (typeof Promise.withResolvers === "undefined") {
