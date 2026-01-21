@@ -39,9 +39,29 @@ async function generateWithRetry(prompt: string, retries = 5, initialDelay = 200
         timeoutPromise
       ]);
 
-      // @ts-ignore - The new SDK returns text() directly on the result object or via valid response checking
-      // Based on docs, result.text() is the helper.
-      const text = result.text();
+      // @ts-ignore
+      // The new @google/genai SDK returns the response directly with a text() method or a text property
+      // If result.text() fails, we might check result.response.text() or just result.text
+      // Based on error "(intermediate value).text is not a function", result might NOT have .text()
+      // Let's inspect it or try standard text extraction pattern for 0.1.0+
+
+      // Attempt to handle both SDK versions or structure variations
+      let text = "";
+      // @ts-ignore
+      if (typeof result.text === 'function') {
+        // @ts-ignore
+        text = result.text();
+      } else if (typeof result.text === 'string') {
+        // @ts-ignore
+        text = result.text;
+      } else if (result.candidates && result.candidates.length > 0) {
+        // @ts-ignore
+        text = result.candidates[0].content.parts[0].text;
+      } else {
+        console.warn("Unexpected Gemini response structure:", JSON.stringify(result));
+        throw new Error("Invalid AI response structure");
+      }
+
       return text || "";
 
     } catch (error) {
