@@ -1,15 +1,24 @@
 "use server";
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
 import { ResumeContent } from "@/types/resume";
 import { ActionResult } from "@/types/result";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+// Initialize the new client
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+// Config for thinking models
+const config = {
+  thinkingConfig: {
+    includeThoughts: false, // We only need the valid JSON output
+  },
+};
+
+const modelName = "gemini-3-flash";
 
 // Helper for Robust AI Calls with Retry and Timeout
-async function generateWithRetry(prompt: string, retries = 5, initialDelay = 2000, timeoutMs = 30000): Promise<string> {
+async function generateWithRetry(prompt: string, retries = 5, initialDelay = 2000, timeoutMs = 60000): Promise<string> {
   for (let i = 0; i < retries; i++) {
     try {
       console.log(`Gemini API call attempt ${i + 1}/${retries}...`);
@@ -18,14 +27,22 @@ async function generateWithRetry(prompt: string, retries = 5, initialDelay = 200
         setTimeout(() => reject(new Error("Gemini API request timed out")), timeoutMs)
       );
 
+      // New SDK call format
+      const aiPromise = ai.models.generateContent({
+        model: modelName,
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        config: config,
+      });
+
       const result = await Promise.race([
-        model.generateContent(prompt),
+        aiPromise,
         timeoutPromise
       ]);
 
-      // @ts-ignore
-      const response = await result.response;
-      return response.text();
+      // @ts-ignore - The new SDK returns text() directly on the result object or via valid response checking
+      // Based on docs, result.text() is the helper.
+      const text = result.text();
+      return text || "";
 
     } catch (error) {
       const isLastAttempt = i === retries - 1;
@@ -35,7 +52,7 @@ async function generateWithRetry(prompt: string, retries = 5, initialDelay = 200
         throw error;
       }
 
-      const delay = initialDelay * Math.pow(2, i); // Exponential backoff (1s, 2s, 4s)
+      const delay = initialDelay * Math.pow(2, i); // Exponential backoff
       console.log(`Retrying in ${delay}ms...`);
       await new Promise(res => setTimeout(res, delay));
     }
@@ -51,8 +68,6 @@ export async function parseResumeAction(formData: FormData): Promise<ActionResul
 
   try {
     const arrayBuffer = await file.arrayBuffer();
-
-
 
     // Polyfill for Vercel/Node environment where DOMMatrix/Canvas is missing
     if (typeof (global as any).DOMMatrix === 'undefined') {

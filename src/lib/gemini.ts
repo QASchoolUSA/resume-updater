@@ -1,9 +1,11 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
-// We will use an environment variable for the key.
-// The user has not provided it yet, but we will set up the client to be ready.
-const apiKey = process.env.GEMINI_API_KEY || "";
+// Initialize the client
+export const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
-export const genAI = new GoogleGenerativeAI(apiKey);
+// Since the new SDK structure is different (genAI.models.generateContent), 
+// exporting a single model instance might be less useful than exporting the client itself.
+// But we can keep a helper if needed, or just export the client.
 
-export const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+// For now, let's just export the client as we are using it directly in actions.ts
+// If other components use this file, we might need to adjust.
