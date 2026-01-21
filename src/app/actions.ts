@@ -8,6 +8,41 @@ import { ActionResult } from "@/types/result";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
+// Helper for Robust AI Calls with Retry and Timeout
+async function generateWithRetry(prompt: string, retries = 3, initialDelay = 1000, timeoutMs = 20000): Promise<string> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      console.log(`Gemini API call attempt ${i + 1}/${retries}...`);
+
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Gemini API request timed out")), timeoutMs)
+      );
+
+      const result = await Promise.race([
+        model.generateContent(prompt),
+        timeoutPromise
+      ]);
+
+      // @ts-ignore
+      const response = await result.response;
+      return response.text();
+
+    } catch (error) {
+      const isLastAttempt = i === retries - 1;
+      console.warn(`Gemini API attempt ${i + 1} failed:`, error instanceof Error ? error.message : error);
+
+      if (isLastAttempt) {
+        throw error;
+      }
+
+      const delay = initialDelay * Math.pow(2, i); // Exponential backoff (1s, 2s, 4s)
+      console.log(`Retrying in ${delay}ms...`);
+      await new Promise(res => setTimeout(res, delay));
+    }
+  }
+  throw new Error("Gemini API failed after max retries");
+}
+
 export async function parseResumeAction(formData: FormData): Promise<ActionResult<ResumeContent>> {
   const file = formData.get("file") as File;
   if (!file) {
@@ -147,9 +182,7 @@ export async function parseResumeAction(formData: FormData): Promise<ActionResul
       ${text}
     `;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const textResponse = response.text();
+    const textResponse = await generateWithRetry(prompt);
     console.log("Gemini Response:", textResponse.substring(0, 200) + "...");
 
     const cleanJson = textResponse.replace(/```json/g, "").replace(/```/g, "").trim();
@@ -192,9 +225,7 @@ export async function tailorResumeAction(currentResume: ResumeContent, jobDescri
       Do not include markdown formatting.
     `;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const textResponse = response.text();
+    const textResponse = await generateWithRetry(prompt);
 
     const cleanJson = textResponse.replace(/```json/g, "").replace(/```/g, "").trim();
 
