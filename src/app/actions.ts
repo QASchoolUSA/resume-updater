@@ -15,7 +15,7 @@ const config = {
   },
 };
 
-const modelName = "gemini-3-flash";
+const modelName = "gemini-3-flash-preview";
 
 // Helper for Robust AI Calls with Retry and Timeout
 async function generateWithRetry(prompt: string, retries = 5, initialDelay = 2000, timeoutMs = 60000): Promise<string> {
