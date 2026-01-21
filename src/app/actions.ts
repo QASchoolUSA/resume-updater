@@ -9,7 +9,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
 // Helper for Robust AI Calls with Retry and Timeout
-async function generateWithRetry(prompt: string, retries = 3, initialDelay = 1000, timeoutMs = 20000): Promise<string> {
+async function generateWithRetry(prompt: string, retries = 5, initialDelay = 2000, timeoutMs = 30000): Promise<string> {
   for (let i = 0; i < retries; i++) {
     try {
       console.log(`Gemini API call attempt ${i + 1}/${retries}...`);
